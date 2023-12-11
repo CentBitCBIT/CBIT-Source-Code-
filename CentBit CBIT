@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+
+contract CentBit is ERC20 {
+    using SafeMath for uint256;
+
+    address public owner;
+    uint256 public immutable slippagePercent = 3;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not the owner");
+        _;
+    }
+
+    constructor() ERC20("CentBit", "CBIT") {
+        owner = msg.sender;
+        _mint(msg.sender, 2000000 * (10**18));
+    }
+
+    function transfer(address to, uint256 amount) public override returns (bool) {
+        uint256 fee = calculateSlippageFee(amount);
+        uint256 finalAmount = amount.sub(fee);
+        super.transfer(to, finalAmount);
+        super.transfer(owner, fee);
+        return true;
+    }
+
+    function calculateSlippageFee(uint256 amount) internal view returns (uint256) {
+        return amount.mul(slippagePercent).div(100);
+    }
+
+    function setOwner(address newOwner) external onlyOwner {
+        owner = newOwner;
+    }
+}
